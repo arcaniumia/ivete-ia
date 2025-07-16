@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pagamento aprovado</title>
+  <script type="module" src="/supabaseClient.js"></script>
+  <style>
+    body {
+      background: #020412;
+      color: #00eaff;
+      font-family: 'Urbanist', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      height: 100vh;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 2rem;
+    }
+
+    p {
+      margin-top: 1rem;
+      color: #ccc;
+    }
+  </style>
+</head>
+<body>
+  <h1>Pagamento aprovado! 🎉</h1>
+  <p>Redirecionando você para a Ivete IA...</p>
+
+  <script type="module">
+    import { supabase } from '/supabaseClient.js';
+
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (user) {
+      await supabase
+        .from('usuarios')
+        .update({ pagante: true })
+        .eq('user_id', user.id);
+    }
+
+    setTimeout(() => {
+      window.location.href = '/chat/index.html';
+    }, 3000);
+  </script>
+</body>
+</html>

@@ -115,6 +115,28 @@
     .extra-links a:hover {
       text-decoration: underline;
     }
+
+    .pay-section {
+      margin-top: 2rem;
+      font-size: 0.95rem;
+      color: #ccc;
+    }
+
+    .pay-section a {
+      display: inline-block;
+      margin-top: 0.5rem;
+      background-color: var(--color-neon-purple);
+      color: #fff;
+      padding: 0.6rem 1rem;
+      border-radius: 10px;
+      text-decoration: none;
+      font-weight: bold;
+      transition: background 0.3s ease;
+    }
+
+    .pay-section a:hover {
+      background-color: #7a00cc;
+    }
   </style>
 </head>
 <body>
@@ -128,6 +150,12 @@
     </form>
     <div class="extra-links">
       <a href="#" id="toggle-mode">Criar conta</a>
+    </div>
+
+    <div class="pay-section">
+      Ainda não é assinante?<br>
+      Para liberar o acesso completo, assine por apenas <strong>R$29/mês</strong>:
+      <a href="https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=2c93808497f5fad10198113ed2f20ad5" target="_blank">Assinar agora</a>
     </div>
   </div>
 
@@ -153,25 +181,55 @@
       e.preventDefault();
       const email = emailInput.value.trim();
       const password = passwordInput.value.trim();
-
       let result;
+
       if (isLogin) {
         result = await supabase.auth.signInWithPassword({ email, password });
       } else {
         result = await supabase.auth.signUp({ email, password });
+
+        if (!result.error) {
+          const {
+            data: { session },
+            error: sessionError
+          } = await supabase.auth.getSession();
+
+          if (sessionError || !session) {
+            alert("Erro ao obter sessão após cadastro.");
+            return;
+          }
+
+          const userId = session.user.id;
+
+          const { data: existing } = await supabase
+            .from('usuarios')
+            .select('id')
+            .eq('id', userId)
+            .single();
+
+          if (!existing) {
+            const { error: insertError } = await supabase
+              .from('usuarios')
+              .insert([{ id: userId, email, pagante: false }]);
+
+            if (insertError) {
+              alert("Erro ao salvar usuário: " + insertError.message);
+              return;
+            }
+          }
+        }
       }
 
       if (result.error) {
-  alert(result.error.message);
-} else {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (session) {
-    window.location.href = "/chat/ivete";
-  } else {
-    alert("Erro ao iniciar sessão. Tente novamente.");
-  }
-}
-
+        alert(result.error.message);
+      } else {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          window.location.href = "/chat/ivete";
+        } else {
+          alert("Erro ao iniciar sessão. Tente novamente.");
+        }
+      }
     });
   </script>
 </body>
