@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login - Ivete IA</title>
+  <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@300;500;700&family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --color-deep-blue: #020412;
+      --color-dark-void: #000005;
+      --color-neon-blue: #00eaff;
+      --color-neon-purple: #9a00ff;
+      --color-text-light: #e0e0e0;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Urbanist', sans-serif;
+      background: linear-gradient(to bottom, var(--color-deep-blue), var(--color-dark-void));
+      color: var(--color-text-light);
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    body::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: radial-gradient(circle at 50% 120%, rgba(0, 234, 255, 0.1), transparent 50%),
+                  radial-gradient(circle at -20% 50%, rgba(154, 0, 255, 0.08), transparent 40%),
+                  radial-gradient(circle at 120% 50%, rgba(0, 234, 255, 0.08), transparent 40%);
+      animation: subtleEnergyFlow 20s infinite alternate ease-in-out;
+      z-index: -1;
+      opacity: 0.6;
+    }
+
+    @keyframes subtleEnergyFlow {
+      0%, 100% { background-position: 50% 120%, -20% 50%, 120% 50%; }
+      50% { background-position: 50% 110%, -10% 60%, 110% 40%; }
+    }
+
+    .login-container {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 3rem 2rem;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 0 20px rgba(0, 234, 255, 0.1);
+      text-align: center;
+      backdrop-filter: blur(12px);
+    }
+
+    .login-logo {
+      width: 80px;
+      margin-bottom: 1rem;
+    }
+
+    h1 {
+      font-family: 'Syncopate', sans-serif;
+      font-size: 1.8rem;
+      margin-bottom: 1.5rem;
+      color: var(--color-neon-blue);
+      text-shadow: 0 0 12px var(--color-neon-blue);
+    }
+
+    input {
+      width: 100%;
+      padding: 0.8rem;
+      margin: 0.5rem 0 1rem 0;
+      border: none;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.05);
+      color: white;
+      font-size: 1rem;
+    }
+
+    button {
+      width: 100%;
+      padding: 0.9rem;
+      background-color: var(--color-neon-blue);
+      border: none;
+      border-radius: 10px;
+      color: #000;
+      font-weight: bold;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.3s ease;
+      margin-top: 0.5rem;
+    }
+
+    button:hover {
+      background-color: #00c7e6;
+    }
+
+    .extra-links {
+      margin-top: 1rem;
+      font-size: 0.9rem;
+    }
+
+    .extra-links a {
+      color: var(--color-neon-blue);
+      text-decoration: none;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .extra-links a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <img src="/logo-ivete.png" alt="Logo Ivete IA" class="login-logo" />
+    <h1>Bem-vindo à Ivete IA</h1>
+    <form>
+      <input type="text" id="email" placeholder="Seu e-mail" required />
+      <input type="password" id="password" placeholder="Senha" required />
+      <button type="submit">Entrar</button>
+    </form>
+    <div class="extra-links">
+      <a href="#" id="toggle-mode">Criar conta</a>
+    </div>
+  </div>
+
+  <script type="module">
+    import { supabase } from './supabaseClient.js';
+
+    const form = document.querySelector("form");
+    const emailInput = document.querySelector("#email");
+    const passwordInput = document.querySelector("#password");
+    const button = form.querySelector("button");
+    const toggleLink = document.getElementById("toggle-mode");
+
+    let isLogin = true;
+
+    toggleLink.addEventListener("click", (e) => {
+      e.preventDefault();
+      isLogin = !isLogin;
+      button.textContent = isLogin ? "Entrar" : "Criar Conta";
+      toggleLink.textContent = isLogin ? "Criar conta" : "Já tenho uma conta";
+    });
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = emailInput.value.trim();
+      const password = passwordInput.value.trim();
+
+      let result;
+      if (isLogin) {
+        result = await supabase.auth.signInWithPassword({ email, password });
+      } else {
+        result = await supabase.auth.signUp({ email, password });
+      }
+
+      if (result.error) {
+  alert(result.error.message);
+} else {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session) {
+    window.location.href = "/chat/ivete";
+  } else {
+    alert("Erro ao iniciar sessão. Tente novamente.");
+  }
+}
+
+    });
+  </script>
+</body>
+</html>

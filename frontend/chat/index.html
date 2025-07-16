@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ivete IA - Assistente do Professor</title>
+  <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@300;500;700&family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <script type="module" src="/supabaseClient.js"></script>
+  <style>
+    :root {
+      --color-deep-blue: #020412;
+      --color-dark-void: #000005;
+      --color-neon-blue: #00eaff;
+      --color-neon-purple: #9a00ff;
+      --color-text-light: #e0e0e0;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Urbanist', sans-serif;
+      background: linear-gradient(to bottom, var(--color-deep-blue), var(--color-dark-void));
+      color: var(--color-text-light);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+      position: relative;
+    }
+
+    body::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: radial-gradient(circle at 50% 120%, rgba(0, 234, 255, 0.1), transparent 50%),
+                  radial-gradient(circle at -20% 50%, rgba(154, 0, 255, 0.08), transparent 40%),
+                  radial-gradient(circle at 120% 50%, rgba(0, 234, 255, 0.08), transparent 40%);
+      animation: subtleEnergyFlow 20s infinite alternate ease-in-out;
+      z-index: -2;
+      opacity: 0.7;
+    }
+
+    @keyframes subtleEnergyFlow {
+      0%, 100% { background-position: 50% 120%, -20% 50%, 120% 50%; }
+      50% { background-position: 50% 110%, -10% 60%, 110% 40%; }
+    }
+
+    header {
+      background: rgba(0, 0, 0, 0.5);
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 1.8rem;
+      font-weight: bold;
+      color: var(--color-neon-blue);
+      text-shadow: 0 0 15px var(--color-neon-blue), 0 0 30px var(--color-neon-purple);
+      font-family: 'Syncopate', sans-serif;
+      border-bottom: 2px solid var(--color-neon-blue);
+      position: relative;
+    }
+
+    header .left {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    header img {
+      height: 48px;
+      width: 48px;
+    }
+
+    .email {
+      font-size: 0.9rem;
+      color: #ccc;
+      margin-right: 1rem;
+    }
+
+    .logout-btn {
+      background: transparent;
+      border: 1px solid #555;
+      color: #eee;
+      padding: 6px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 1.5rem;
+      gap: 1rem;
+      overflow-y: auto;
+    }
+
+    .chat-box {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      overflow-y: auto;
+      padding-right: 0.5rem;
+    }
+
+    .message {
+      max-width: 85%;
+      padding: 1rem;
+      border-radius: 12px;
+      line-height: 1.5;
+      backdrop-filter: blur(4px);
+      word-wrap: break-word;
+      white-space: pre-wrap;
+    }
+
+    .user {
+      align-self: flex-end;
+      background: rgba(0, 234, 255, 0.1);
+      border: 1px solid var(--color-neon-blue);
+    }
+
+    .assistant {
+      align-self: flex-start;
+      background: rgba(154, 0, 255, 0.08);
+      border: 1px solid var(--color-neon-purple);
+    }
+
+    .fixed-message {
+      align-self: center;
+      background-color: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 10px;
+      padding: 1rem;
+      max-width: 90%;
+      font-size: 1rem;
+      font-style: italic;
+      color: #ccc;
+      text-align: center;
+    }
+
+    form {
+      display: flex;
+      gap: 1rem;
+      padding: 1rem;
+      background: rgba(0, 0, 0, 0.4);
+      border-top: 2px solid rgba(255, 255, 255, 0.05);
+    }
+
+    input[type="text"] {
+      flex: 1;
+      padding: 0.8rem 1rem;
+      border-radius: 10px;
+      border: none;
+      background: rgba(255, 255, 255, 0.05);
+      color: white;
+      font-size: 1rem;
+    }
+
+    input::placeholder {
+      color: #aaa;
+    }
+
+    button {
+      padding: 0.8rem 1.4rem;
+      background-color: var(--color-neon-blue);
+      color: #000;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #00c7e6;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="left">
+      <img src="https://i.imgur.com/rSshykT.png" alt="Logo Ivete IA" />
+      Ivete IA - Assistente do Professor
+    </div>
+    <div>
+      <span id="user-email" class="email"></span>
+      <button class="logout-btn" onclick="logout()">Sair</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="chat-box" id="chatBox">
+      <div class="fixed-message">
+        Olá! Eu sou a Ivete IA, sua assistente pessoal para simplificar e enriquecer sua rotina em sala de aula. 🌟<br>
+        Escolha como posso te ajudar e vamos começar!
+      </div>
+    </div>
+
+    <form id="chatForm">
+      <input type="text" id="userInput" placeholder="Digite sua mensagem..." autocomplete="off" required />
+      <button type="submit">Enviar</button>
+    </form>
+  </main>
+
+  <script type="module">
+    import { supabase } from '/supabaseClient.js';
+
+    const gptId = 'ivete';
+    const chatBox = document.getElementById("chatBox");
+    const form = document.getElementById("chatForm");
+    const input = document.getElementById("userInput");
+    const emailEl = document.getElementById("user-email");
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) window.location.href = '/';
+    emailEl.textContent = user.email;
+
+    let sessionId = localStorage.getItem('sessionId-' + gptId);
+    if (!sessionId) {
+      sessionId = gptId + '-' + crypto.randomUUID();
+      localStorage.setItem('sessionId-' + gptId, sessionId);
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const userMessage = input.value.trim();
+      if (!userMessage) return;
+
+      renderMessage("user", userMessage);
+      input.value = "";
+
+      const thinking = document.createElement("div");
+      thinking.className = "message assistant";
+      thinking.innerText = `Ivete IA está digitando...`;
+      chatBox.appendChild(thinking);
+      chatBox.scrollTop = chatBox.scrollHeight;
+
+      try {
+        const res = await fetch(`/gpts/${gptId}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: userMessage, sessionId })
+        });
+
+        const data = await res.json();
+        thinking.remove();
+        renderResponse(data.response, data.fileUrl);
+      } catch (error) {
+        thinking.remove();
+        renderMessage("assistant", "Erro ao se comunicar com o servidor.");
+        console.error(error);
+      }
+    });
+
+    function renderMessage(sender, text) {
+      const msg = document.createElement("div");
+      msg.className = `message ${sender}`;
+      msg.innerText = text;
+      chatBox.appendChild(msg);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function renderResponse(text, fileUrl) {
+      const msg = document.createElement("div");
+      msg.className = "message assistant";
+      msg.innerText = text;
+
+      if (fileUrl) {
+        const link = document.createElement("a");
+        link.href = fileUrl;
+        link.target = "_blank";
+        link.className = "download-link";
+        link.textContent = "📄 Baixar documento Word";
+        msg.appendChild(document.createElement("br"));
+        msg.appendChild(link);
+      }
+
+      chatBox.appendChild(msg);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    window.logout = async function () {
+      await supabase.auth.signOut();
+      window.location.href = '/';
+    };
+  </script>
+</body>
+</html>
