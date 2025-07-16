@@ -9,7 +9,118 @@
   <script type="module" src="/supabaseClient.js"></script>
   <script type="module" src="/config.js"></script>
   <style>
-    /* Mantenha aqui seus estilos completos como estavam */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Urbanist', sans-serif;
+    }
+
+    body {
+      background: #f9f9f9;
+      padding: 20px;
+      color: #222;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 20px;
+      background-color: #1e1e2f;
+      color: white;
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+
+    header img {
+      height: 40px;
+      margin-right: 10px;
+    }
+
+    header .left {
+      display: flex;
+      align-items: center;
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+
+    .logout-btn {
+      background-color: #ff5f5f;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+
+    .chat-box {
+      background-color: white;
+      border-radius: 10px;
+      padding: 15px;
+      height: 400px;
+      overflow-y: auto;
+      margin-bottom: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .message {
+      margin-bottom: 12px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+
+    .message.user {
+      text-align: right;
+      font-weight: bold;
+    }
+
+    .message.assistant {
+      text-align: left;
+    }
+
+    .fixed-message {
+      color: #555;
+      margin-bottom: 20px;
+    }
+
+    form {
+      display: flex;
+      gap: 10px;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 1rem;
+    }
+
+    button[type="submit"] {
+      background-color: #1e88e5;
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+
+    .download-link {
+      display: inline-block;
+      margin-top: 8px;
+      font-size: 0.95rem;
+      color: #1e88e5;
+      text-decoration: underline;
+    }
+
+    #user-email {
+      margin-right: 10px;
+      font-size: 0.95rem;
+      opacity: 0.8;
+    }
   </style>
 </head>
 <body>
@@ -48,69 +159,60 @@
     const input = document.getElementById("userInput");
     const emailEl = document.getElementById("user-email");
 
-    async function init() {
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
+    // Verifica usuário logado
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) window.location.href = '/';
 
-      if (userError || !user) {
-        window.location.href = '/';
-        return;
-      }
+    emailEl.textContent = user.email;
 
-      emailEl.textContent = user.email;
+    // Verifica se o usuário é pagante
+    const { data, error } = await supabase
+      .from('usuarios')
+      .select('pagante')
+      .eq('email', user.email)
+      .single();
 
-      // Verifica se é pagante
-      const { data, error } = await supabase
-        .from('usuarios')
-        .select('pagante')
-        .eq('email', user.email)
-        .single();
-
-      if (error || !data || !data.pagante) {
-        window.location.href = '/pagamento.html';
-        return;
-      }
-
-      startChat(user.email);
+    if (error || !data || !data.pagante) {
+      window.location.href = '/pagamento.html';
     }
 
-    function startChat(email) {
-      let sessionId = localStorage.getItem('sessionId-' + gptId);
-      if (!sessionId) {
-        sessionId = gptId + '-' + crypto.randomUUID();
-        localStorage.setItem('sessionId-' + gptId, sessionId);
-      }
-
-      form.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const userMessage = input.value.trim();
-        if (!userMessage) return;
-
-        renderMessage("user", userMessage);
-        input.value = "";
-
-        const thinking = document.createElement("div");
-        thinking.className = "message assistant";
-        thinking.innerText = `Ivete IA está digitando...`;
-        chatBox.appendChild(thinking);
-        chatBox.scrollTop = chatBox.scrollHeight;
-
-        try {
-          const res = await fetch(`${API_URL}/gpts/${gptId}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ message: userMessage, sessionId })
-          });
-
-          const data = await res.json();
-          thinking.remove();
-          renderResponse(data.response, data.fileUrl);
-        } catch (error) {
-          thinking.remove();
-          renderMessage("assistant", "Erro ao se comunicar com o servidor.");
-          console.error(error);
-        }
-      });
+    // Gera ou recupera sessionId
+    let sessionId = localStorage.getItem('sessionId-' + gptId);
+    if (!sessionId) {
+      sessionId = gptId + '-' + crypto.randomUUID();
+      localStorage.setItem('sessionId-' + gptId, sessionId);
     }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const userMessage = input.value.trim();
+      if (!userMessage) return;
+
+      renderMessage("user", userMessage);
+      input.value = "";
+
+      const thinking = document.createElement("div");
+      thinking.className = "message assistant";
+      thinking.innerText = `Ivete IA está digitando...`;
+      chatBox.appendChild(thinking);
+      chatBox.scrollTop = chatBox.scrollHeight;
+
+      try {
+        const res = await fetch(`${API_URL}/gpts/${gptId}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: userMessage, sessionId })
+        });
+
+        const data = await res.json();
+        thinking.remove();
+        renderResponse(data.response, data.fileUrl);
+      } catch (error) {
+        thinking.remove();
+        renderMessage("assistant", "Erro ao se comunicar com o servidor.");
+        console.error(error);
+      }
+    });
 
     function renderMessage(sender, text) {
       const msg = document.createElement("div");
@@ -143,8 +245,6 @@
       await supabase.auth.signOut();
       window.location.href = '/';
     };
-
-    init();
   </script>
 </body>
 </html>
